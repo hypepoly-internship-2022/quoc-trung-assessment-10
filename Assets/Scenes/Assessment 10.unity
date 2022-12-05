@@ -1094,7 +1094,7 @@ MonoBehaviour:
   enemy: {fileID: 1683460444}
   playerController: {fileID: 1963943349}
   displayText: {fileID: 1697133636}
-  timeLeft: 20
+  timeLeft: 120
   goalGameObject: {fileID: 1206826865}
   timerOn: 0
 --- !u!4 &1421195997

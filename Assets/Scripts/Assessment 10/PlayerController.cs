@@ -21,10 +21,14 @@ public class PlayerController : MonoBehaviour
 
     float xPos;
     float zPos;
-    float speed = 6f;
+    float speed = 5f;
     float amplitude = 0.2f;
     int groundIndex = 0;
+    int playerIndex = 1;
     bool isDragging;
+    float currentPosition;
+    float timeToDelay;
+    float currentTime;
     
     
     private void Awake()
@@ -32,6 +36,8 @@ public class PlayerController : MonoBehaviour
         playerState = PlayerState.Idle;
         mainCamera = FindObjectOfType<Camera>();
         playerRb = GetComponent<Rigidbody>();
+        currentTime = 0;
+        
     }
     private void Update()
     {
@@ -46,20 +52,37 @@ public class PlayerController : MonoBehaviour
                 break;
         }
     }
+
     void PlayerIdleState()
     {
+        timeToDelay = 1.5f;
+        currentPosition = gameObject.transform.position.z;
         ChangePlayerColor(PlayerState.Idle);
         ResetVelocity();
         ShakeObject();
-        Invoke("SetPlayerStateActive", 2f);
+        currentTime = currentTime + 1f * Time.deltaTime;
+        if (currentTime > timeToDelay)
+        {
+            currentTime= 0;
+            SetPlayerStateActive();
+           
+        }
     }
+
     void PlayerActiveState()
     {
+        timeToDelay = 0.5f;
         ChangePlayerColor(PlayerState.Active);
-        DragObject();
-        PushObject();
-        Invoke("SetPlayerStateIdle", 1f);
+        MoveObject();
+        currentTime = currentTime + 1f * Time.deltaTime;
+        if (currentTime > timeToDelay)
+        {
+            currentTime = 0;
+            SetPlayerStateIdle();
+
+        }
     }
+
     void ChangePlayerColor(PlayerState playerState)
     {
         if (playerState == PlayerState.Idle)
@@ -71,6 +94,7 @@ public class PlayerController : MonoBehaviour
             transform.gameObject.GetComponent<Renderer>().material.color = Color.green;
         }
     }
+
     void SetPlayerStateIdle()
     {
         playerState = PlayerState.Idle;
@@ -80,6 +104,7 @@ public class PlayerController : MonoBehaviour
     {
         playerState = PlayerState.Active;  
     }
+
     private void OnCollisionEnter(Collision collision)
     {
         if (collision.gameObject.CompareTag("Goal"))
@@ -87,7 +112,8 @@ public class PlayerController : MonoBehaviour
             gameManager.SetGameManagerWinState();
         }
     }
-    void DragObject()
+
+    void MoveObject()
     {
         if (Input.GetMouseButton(0))
         {
@@ -98,10 +124,14 @@ public class PlayerController : MonoBehaviour
                 xPos = hits[groundIndex].point.x;
                 zPos = hits[groundIndex].point.z;
 
-                if (hits.Length == 2)
+                if (hits.Length == 2 && hits[playerIndex].collider.gameObject.CompareTag("Player"))
                 {
                     isDragging = true;
                     player = transform.gameObject;
+                }
+                if(hits.Length == 1)
+                {
+                    playerRb.AddForce(Vector3.forward.normalized * speed);
                 }
             }
             if(isDragging)
@@ -113,29 +143,28 @@ public class PlayerController : MonoBehaviour
         }
         else
         {
-            isDragging = false;
-        }
-
-    }
-    void PushObject()
-    {
-        if (Input.GetMouseButton(0))
-        {
-            playerRb.AddForce(Vector3.forward.normalized * speed);
-        }
-        else
-        {
             ResetVelocity();
         }
-        
+        LimitPosition(currentPosition + 2);
     }
+
     void ResetVelocity()
     {
         playerRb.velocity = Vector3.zero;
+        isDragging = false;
     }
+
     void ShakeObject()
     {
         float y = amplitude * Mathf.Sin(Time.time * 8);
         transform.position = new Vector3(transform.position.x, y + 0.7f, transform.position.z);
+    }
+
+    void LimitPosition(float limit)
+    {
+        if(transform.position.z > limit)
+        {
+            transform.position = new Vector3(transform.position.x, transform.position.y, limit);
+        }
     }
 }
